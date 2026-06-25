@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Import Dump File - MediaList{% endblock %}
+{% block content %}
+<div class="section">
+  <div class="section-head"><h1>Bulk import - embed dump (CSV / ZIP)</h1><a class="more" href="/admin">← Admin</a></div>
+
+  <p class="muted">For Pornhub's official Webmasters “Embed Dump”. Download &amp; unzip it,
+  then give the path to the <code>.csv</code> (or the <code>.zip</code>/<code>.gz</code> directly).
+  Rows import as <strong>Adult video (18+)</strong> with thumbnail previews and inline embeds.</p>
+
+  <form class="admin-form" method="post" action="/admin/import-file">
+    <label>File path on this machine
+      <input name="path" value="{{ path }}" required placeholder="/home/you/Downloads/pornhub_embed.csv">
+    </label>
+    <label>Max rows to import (cap for SQLite)
+      <input name="limit" type="number" value="500" min="1" max="5000">
+    </label>
+    <button class="btn-primary">Import</button>
+  </form>
+
+  {% if result %}
+    <div class="block">
+      <h2>Result</h2>
+      {% if result.error %}
+        <p class="form-error">{{ result.error }}</p>
+      {% else %}
+        <p><strong>{{ result.created }}</strong> new · <strong>{{ result.updated }}</strong> updated
+           (of {{ result.total }} parsed).
+           <a href="/browse/adultvideo">View Adult catalog →</a></p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

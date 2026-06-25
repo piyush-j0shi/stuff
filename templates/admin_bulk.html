@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Bulk Import - MediaList{% endblock %}
+{% block content %}
+<div class="section">
+  <div class="section-head"><h1>Bulk import</h1><a class="more" href="/admin">Back to Admin</a></div>
+
+  <p class="muted">Enter how many <strong>pages</strong> to pull for each category
+  (about 20-25 items per page). <strong>Leave a field at 0 to skip it.</strong>
+  {% if not tmdb_ready %}<br>TMDB (movies / dramas / web series) needs a key in <code>.env</code>.{% endif %}</p>
+
+  <form class="admin-form" method="post" action="/admin/bulk">
+    <div class="form-row">
+      <label>Anime pages<input type="number" name="anime" value="0" min="0" max="500"></label>
+      <label>Manga pages<input type="number" name="manga" value="0" min="0" max="500"></label>
+      <label>Manhwa pages<input type="number" name="manhwa" value="0" min="0" max="500"></label>
+      <label>Hentai pages<input type="number" name="hentai" value="0" min="0" max="500"></label>
+    </div>
+    <div class="form-row">
+      <label>Movies pages<input type="number" name="movies" value="0" min="0" max="500"></label>
+      <label>Dramas pages<input type="number" name="dramas" value="0" min="0" max="500"></label>
+      <label>Web Series pages<input type="number" name="webseries" value="0" min="0" max="500"></label>
+      <label>Sports (1 = pull, 0 = skip)<input type="number" name="sports" value="0" min="0" max="1"></label>
+    </div>
+    <button class="btn-primary" {{ 'disabled' if status.running else '' }}>
+      {{ 'Import running...' if status.running else 'Start import' }}</button>
+  </form>
+
+  <div class="block">
+    <h2>Status {% if status.running %}<span class="status-pill watching">running</span>
+      {% elif status.done %}<span class="status-pill completed">finished</span>{% endif %}</h2>
+    {% if status.lines %}
+      <pre class="bulk-log">{% for l in status.lines %}{{ l }}
+{% endfor %}</pre>
+      <p class="muted">Refresh this page to update progress.</p>
+    {% else %}
+      <p class="muted">No import run yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block title %}{{ type_label }} - MediaList{% endblock %}
+{% block content %}
+<div class="section">
+  <div class="section-head">
+    <h1>{{ type_label }} <span class="count">{{ '{:,}'.format(total) }} titles</span></h1>
+  </div>
+  <div class="sortbar">
+    {% set catq = ('&cat=' ~ active_cat) if active_cat else '' %}
+    {% for key, (order, label) in sorts.items() %}
+      <a href="/browse/{{ type_ }}?sort={{ key }}{{ catq }}"
+         class="chip {{ 'active' if key == sort else '' }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if categories_list %}
+  <form class="genrebar" method="get" action="/browse/{{ type_ }}">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <label class="catbar-label">Genre</label>
+    <input name="cat" list="genre-options" value="{{ active_cat or '' }}"
+           placeholder="Type or pick a genre…" autocomplete="off"
+           onchange="this.form.submit()">
+    <datalist id="genre-options">
+      {% for tag, n in categories_list %}<option value="{{ tag }}">{{ tag|title }} ({{ n }})</option>{% endfor %}
+    </datalist>
+    <button class="btn-primary">Filter</button>
+    {% if active_cat %}<a class="clear-link" href="/browse/{{ type_ }}?sort={{ sort }}">clear</a>{% endif %}
+  </form>
+  {% endif %}
+
+  {% if active_cat %}<p class="filtered">Showing <strong>{{ active_cat|title }}</strong> genre</p>{% endif %}
+
+  {% if items %}
+    <div class="grid wide">
+      {% for it in items %}{{ card(it) }}{% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav class="pager">
+      {% set base = '/browse/' ~ type_ ~ '?sort=' ~ sort ~ catq ~ '&page=' %}
+      {% if page > 1 %}<a class="pg" href="{{ base }}{{ page-1 }}">‹ Prev</a>{% endif %}
+
+      {% set lo = [1, page-2]|max %}
+      {% set hi = [total_pages, page+2]|min %}
+      {% if lo > 1 %}<a class="pg" href="{{ base }}1">1</a><span class="pg-gap">…</span>{% endif %}
+      {% for p in range(lo, hi+1) %}
+        <a class="pg {{ 'active' if p == page else '' }}" href="{{ base }}{{ p }}">{{ p }}</a>
+      {% endfor %}
+      {% if hi < total_pages %}<span class="pg-gap">…</span><a class="pg" href="{{ base }}{{ total_pages }}">{{ total_pages }}</a>{% endif %}
+
+      {% if page < total_pages %}<a class="pg" href="{{ base }}{{ page+1 }}">Next ›</a>{% endif %}
+    </nav>
+    <p class="pager-info">Page {{ page }} of {{ total_pages }}</p>
+    {% endif %}
+  {% else %}
+    <p class="empty">Nothing here yet. Use <a href="/admin">Admin → Import</a> to add data.</p>
+  {% endif %}
+</div>
+{% endblock %}

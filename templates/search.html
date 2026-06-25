@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block title %}Search - MediaList{% endblock %}
+{% block content %}
+<div class="section">
+  <div class="section-head"><h1>Search results for "{{ q }}"</h1></div>
+  {% if items %}
+    <div class="grid wide">{% for it in items %}{{ card(it) }}{% endfor %}</div>
+  {% else %}
+    <p class="empty">No matches{% if q %} for "{{ q }}"{% endif %}.</p>
+  {% endif %}
+</div>
+{% endblock %}
