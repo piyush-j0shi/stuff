@@ -4,7 +4,7 @@ from .db import db
 from .sources import jikan, tmdb
 
 
-def _store(item_id, data):
+def store(item_id, data):
     director = data.get("director")
     cast = data.get("cast") or []
     with db() as conn:
@@ -18,7 +18,7 @@ def _store(item_id, data):
                 (item_id, pid, role))
         row = conn.execute("SELECT extra_json FROM media_item WHERE id = ?", (item_id,)).fetchone()
         extra = json.loads(row["extra_json"] or "{}")
-        extra["_enriched"] = 1
+        extra["enriched"] = 1
         if director:
             extra["director"] = director
         conn.execute("UPDATE media_item SET extra_json = ? WHERE id = ?",
@@ -26,7 +26,7 @@ def _store(item_id, data):
 
 
 def enrich(item):
-    if item.get("extra", {}).get("_enriched"):
+    if item.get("extra", {}).get("enriched"):
         return
     src, type_, sid = item.get("source"), item.get("type"), item.get("source_id")
     if not sid:
@@ -42,4 +42,4 @@ def enrich(item):
     except Exception:
         data = None
     if data is not None:
-        _store(item["id"], data)
+        store(item["id"], data)

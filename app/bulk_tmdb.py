@@ -5,7 +5,7 @@ from .db import init_db
 from .sources import tmdb
 
 
-def _p(label, page, total):
+def p(label, page, total):
     print(f"{label}: page {page}, {total} fetched", flush=True)
 
 
@@ -26,9 +26,9 @@ def run(movies=100, dramas=100, webseries=100):
         print(f"{label}: added {res['created']} new and updated {res['updated']} "
               f"(out of {len(items)} fetched)", flush=True)
 
-    imp("movies", tmdb.popular_movies(movies, _p))
-    imp("dramas", tmdb.popular_dramas(dramas, _p))
-    imp("webseries", tmdb.popular_webseries(webseries, _p))
+    imp("movies", tmdb.popular_movies(movies, p))
+    imp("dramas", tmdb.popular_dramas(dramas, p))
+    imp("webseries", tmdb.popular_webseries(webseries, p))
     print(f"\nAll done. {total} items fetched and stored.", flush=True)
     return total
 

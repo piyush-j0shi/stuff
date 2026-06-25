@@ -5,7 +5,7 @@ import httpx
 KEY = os.environ.get("THESPORTSDB_KEY", "3")
 BASE = f"https://www.thesportsdb.com/api/v1/json/{KEY}"
 
-def _map_event(d):
+def map_event(d):
     date = d.get("dateEvent") or ""
     return {
         "type": "sports",
@@ -21,7 +21,7 @@ def _map_event(d):
         "is_adult": 0,
     }
 
-def _map_team(d):
+def map_team(d):
     return {
         "type": "sports",
         "title": d.get("strTeam"),
@@ -40,10 +40,10 @@ def search(term, limit=12):
         ev = c.get(f"{BASE}/searchevents.php", params={"e": term})
         events = (ev.json().get("event") or []) if ev.status_code == 200 else []
         if events:
-            return [_map_event(d) for d in events[:limit]]
+            return [map_event(d) for d in events[:limit]]
         tm = c.get(f"{BASE}/searchteams.php", params={"t": term})
         teams = (tm.json().get("teams") or []) if tm.status_code == 200 else []
-        return [_map_team(d) for d in teams[:limit]]
+        return [map_team(d) for d in teams[:limit]]
 
 POPULAR_LEAGUES = {
     "4328": "English Premier League", "4335": "Spanish La Liga",
@@ -63,7 +63,7 @@ def all_teams(leagues=None, on_progress=None):
                 teams = (r.json().get("teams") or []) if r.status_code == 200 else []
             except Exception:
                 continue
-            out += [_map_team(d) for d in teams]
+            out += [map_team(d) for d in teams]
             if on_progress:
                 on_progress("sports", lid, len(out))
     return out

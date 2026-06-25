@@ -18,8 +18,8 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-_COVER_COLORS = ["#2e51a2", "#4b6cb7", "#3a7d44", "#8e44ad", "#c0392b",
-                 "#16a085", "#d35400", "#2c3e50", "#7f8c8d", "#b03a5b"]
+COVER_COLORS = ["#2e51a2", "#4b6cb7", "#3a7d44", "#8e44ad", "#c0392b",
+                "#16a085", "#d35400", "#2c3e50", "#7f8c8d", "#b03a5b"]
 
 def show_adult(request: Request) -> bool:
     if SAFE_MODE:
@@ -30,7 +30,7 @@ def current_user(request: Request):
     uid = request.session.get("user_id")
     return auth.get_user(uid) if uid else None
 
-def _is_admin(user):
+def account_is_admin(user):
     if not user:
         return False
     if user["is_admin"] == 1:
@@ -39,7 +39,7 @@ def _is_admin(user):
 
 def base_ctx(request: Request):
     user = current_user(request)
-    is_admin = _is_admin(user)
+    is_admin = account_is_admin(user)
     return {
         "request": request,
         "categories": CATEGORIES,
@@ -51,7 +51,7 @@ def base_ctx(request: Request):
     }
 
 @app.on_event("startup")
-def _startup():
+def startup():
     init_db()
 
 @app.get("/", response_class=HTMLResponse)
@@ -88,7 +88,7 @@ def browse(request: Request, type_: str, sort: str = "top", page: int = 1, cat: 
         return RedirectResponse("/")
     if is_adult_type(type_) and not show_adult(request):
         return RedirectResponse(f"/age-gate?next=/browse/{type_}")
-    order, _label = SORTS.get(sort, SORTS["top"])
+    order, label = SORTS.get(sort, SORTS["top"])
     cat = cat.strip().lower() or None
     items, total, total_pages = queries.browse_page(
         type_, page, PER_PAGE, show_adult(request), order=order, tag=cat)
@@ -106,7 +106,7 @@ def item(request: Request, item_id: int):
     it = queries.get_item(item_id, show_adult(request))
     if not it:
         return HTMLResponse("Not found (or age-restricted).", status_code=404)
-    if not it["cast"] and not it["extra"].get("_enriched"):
+    if not it["cast"] and not it["extra"].get("enriched"):
         enrich.enrich(it)
         it = queries.get_item(item_id, show_adult(request))
     my_status = None
@@ -242,7 +242,7 @@ def mylist(request: Request, status: str = "all", sort: str = "recent"):
 
 def require_admin(request: Request):
     u = current_user(request)
-    return u if _is_admin(u) else None
+    return u if account_is_admin(u) else None
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_home(request: Request):
@@ -294,7 +294,7 @@ def admin_add(
         "is_adult": bool(is_adult) or is_adult_type(type_),
         "source": "manual", "source_id": None,
     }
-    new_id, _created = store.upsert_item(item)
+    new_id, created = store.upsert_item(item)
     return templates.TemplateResponse("admin_add.html", {**base_ctx(request), "saved": new_id})
 
 @app.get("/admin/import", response_class=HTMLResponse)
@@ -388,7 +388,7 @@ def cover(item_id: int):
     with db() as conn:
         row = conn.execute("SELECT title, type FROM media_item WHERE id = ?", (item_id,)).fetchone()
     title = row["title"] if row else "?"
-    color = _COVER_COLORS[item_id % len(_COVER_COLORS)]
+    color = COVER_COLORS[item_id % len(COVER_COLORS)]
     initials = "".join(w[0] for w in title.split()[:2]).upper() or "?"
     svg = f"""<svg xmlns='http://www.w3.org/2000/svg' width='225' height='320'>
       <rect width='100%' height='100%' fill='{color}'/>

@@ -12,17 +12,17 @@ FLUSH = 2000
 EXCLUDE_TOKENS = {"gay", "solo male", "male masturbation", "male-masturbation"}
 KEEP_TOKENS = {"lesbian", "solo female"}
 
-def _tokens(tag_str, cat_str):
+def token_set(tag_str, cat_str):
     blob = (tag_str + ";" + cat_str).lower()
     return {t.strip() for t in blob.replace(",", ";").split(";") if t.strip()}
 
-def _excluded(tag_str, cat_str):
-    tokens = _tokens(tag_str, cat_str)
+def excluded(tag_str, cat_str):
+    tokens = token_set(tag_str, cat_str)
     if tokens & KEEP_TOKENS:
         return False
     return bool(tokens & EXCLUDE_TOKENS)
 
-def _category_tags(cat_str):
+def category_tags(cat_str):
     cats = {c.strip().lower() for c in cat_str.split(";") if c.strip()}
     return sorted(cats - EXCLUDE_TOKENS)
 
@@ -35,13 +35,13 @@ INSERT = """INSERT OR IGNORE INTO media_item
     VALUES ('adultvideo', :title, :image_url, :synopsis, :units, :score,
             :members, 'pornhub_dump', :sid, '[]', :extra, 1)"""
 
-def _checkpoint():
+def checkpoint():
     with db() as c:
         r = c.execute("SELECT last_page, done, items FROM sync_state WHERE job=?",
                       (JOB,)).fetchone()
     return (r["last_page"], r["done"], r["items"]) if r else (0, 0, 0)
 
-def _save(offset, done, items):
+def save(offset, done, items):
     with db() as c:
         c.execute(
             "INSERT INTO sync_state(job,last_page,done,items,updated_at) "
@@ -50,7 +50,7 @@ def _save(offset, done, items):
             "items=excluded.items, updated_at=CURRENT_TIMESTAMP",
             (JOB, offset, done, items))
 
-def _parse(raw):
+def parse(raw):
     parts = raw.rstrip(b"\n").split(b"|")
     if len(parts) < 4:
         return None
@@ -62,17 +62,17 @@ def _parse(raw):
         return None
     raw_tags = parts[4].decode("utf-8", "replace") if len(parts) > 4 else ""
     raw_cats = parts[5].decode("utf-8", "replace") if len(parts) > 5 else ""
-    if _excluded(raw_tags, raw_cats):
+    if excluded(raw_tags, raw_cats):
         return None
 
     vk = VIEWKEY.search(embed)
     sid = vk.group(1) if vk else (embed or title)[:120]
 
     tags = raw_tags.replace(";", ", ")
-    duration = _int(parts[7]) if len(parts) > 7 else 0
-    views = _int(parts[8]) if len(parts) > 8 else 0
-    up = _int(parts[9]) if len(parts) > 9 else 0
-    down = _int(parts[10]) if len(parts) > 10 else 0
+    duration = to_int(parts[7]) if len(parts) > 7 else 0
+    views = to_int(parts[8]) if len(parts) > 8 else 0
+    up = to_int(parts[9]) if len(parts) > 9 else 0
+    down = to_int(parts[10]) if len(parts) > 10 else 0
     score = round(up / (up + down) * 10, 2) if (up + down) else 0
 
     return {
@@ -84,14 +84,14 @@ def _parse(raw):
         "members": views,
         "sid": sid,
         "extra": '{"embed_url": "%s"}' % embed if embed else "{}",
-        "cats": _category_tags(raw_cats),
+        "cats": category_tags(raw_cats),
     }
 
-def _int(b):
+def to_int(b):
     s = b.decode("ascii", "replace").strip()
     return int(s) if s.isdigit() else 0
 
-def _write_tags(conn, batch):
+def write_tags(conn, batch):
     sids = [r["sid"] for r in batch if r.get("cats")]
     if not sids:
         return
@@ -117,7 +117,7 @@ def purge_excluded():
     print(f"Removed {n:,} excluded rows and kept the lesbian ones.")
 
 def status():
-    off, done, items = _checkpoint()
+    off, done, items = checkpoint()
     size = os.path.getsize(DEFAULT_FILE) if os.path.isfile(DEFAULT_FILE) else 0
     pct = (off / size * 100) if size else 0
     print(f"Imported {items:,} rows so far, about {pct:.2f}% through the file. "
@@ -129,7 +129,7 @@ def run(count=5000, path=None, reset=False):
         print(f"File not found: {path}")
         return
     init_db()
-    offset, done, total = _checkpoint()
+    offset, done, total = checkpoint()
     if reset:
         offset, total = 0, 0
     if done and not reset:
@@ -148,24 +148,24 @@ def run(count=5000, path=None, reset=False):
                 done = 1
                 break
             offset = f.tell()
-            row = _parse(raw)
+            row = parse(raw)
             if row:
                 batch.append(row)
                 imported += 1
             if len(batch) >= FLUSH:
                 conn.executemany(INSERT, batch)
-                _write_tags(conn, batch)
+                write_tags(conn, batch)
                 conn.commit()
                 batch = []
                 print(f"{imported:,} of {count:,} done this run "
                       f"({offset/size*100:.2f}% through the file)", flush=True)
         if batch:
             conn.executemany(INSERT, batch)
-            _write_tags(conn, batch)
+            write_tags(conn, batch)
             conn.commit()
 
     total += imported
-    _save(offset, done, total)
+    save(offset, done, total)
     print(f"Imported {imported:,} this run, {total:,} in total. "
           f"{'That was the whole file.' if done else 'Run it again to keep going.'}")
 

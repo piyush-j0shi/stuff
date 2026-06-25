@@ -8,7 +8,7 @@ from .db import init_db
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-def _prompt_email():
+def prompt_email():
     while True:
         email = input("Email: ").strip().lower()
         if not EMAIL_RE.match(email):
@@ -21,7 +21,7 @@ def _prompt_email():
         return email
 
 
-def _prompt_username():
+def prompt_username():
     while True:
         username = input("Username: ").strip()
         if len(username) < 3:
@@ -33,7 +33,7 @@ def _prompt_username():
         return username
 
 
-def _prompt_password():
+def prompt_password():
     while True:
         pw = getpass.getpass("Password: ")
         if len(pw) < 6:
@@ -48,9 +48,9 @@ def _prompt_password():
 def main():
     init_db()
     print("Let's create an admin user.")
-    email = _prompt_email()
-    username = _prompt_username()
-    password = _prompt_password()
+    email = prompt_email()
+    username = prompt_username()
+    password = prompt_password()
     auth.create_user(username, password, email=email, is_admin=1)
     print(f"\nAdmin user {username} created. Log in with it and you'll see the Admin panel.")
 

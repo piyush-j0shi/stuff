@@ -56,7 +56,7 @@
       <p>{{ item.synopsis or 'No description available.' }}</p>
     </div>
 
-    {% set hidden = ['embed_url', 'adult_flag', '_enriched'] %}
+    {% set hidden = ['embed_url', 'adult_flag', 'enriched'] %}
     {% set details = item.extra.items()|list if item.extra else [] %}
     {% if details %}
     <div class="block">

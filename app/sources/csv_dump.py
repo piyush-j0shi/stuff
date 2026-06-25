@@ -18,7 +18,7 @@ HEADER_MAP = {
     "url": "url", "link": "url", "video_url": "url",
 }
 
-def _open_text(path):
+def open_text(path):
     if path.lower().endswith(".zip"):
         zf = zipfile.ZipFile(path)
         name = next((n for n in zf.namelist() if n.lower().endswith(".csv")), zf.namelist()[0])
@@ -27,7 +27,7 @@ def _open_text(path):
         return io.TextIOWrapper(gzip.open(path, "rb"), encoding="utf-8", errors="replace")
     return open(path, encoding="utf-8", errors="replace")
 
-def _embed_from(value, url=""):
+def embed_from(value, url=""):
     if value:
         m = IFRAME_SRC.search(value)
         if m:
@@ -40,16 +40,16 @@ def _embed_from(value, url=""):
             return f"https://www.pornhub.com/embed/{m.group(1)}"
     return ""
 
-def _looks_like_img(s):
+def looks_like_img(s):
     return bool(s) and s.lower().startswith("http") and bool(IMG_EXT.search(s))
 
-def _row_from_headed(d):
+def row_from_headed(d):
     g = {HEADER_MAP[k.strip().lower()]: v for k, v in d.items()
          if k and k.strip().lower() in HEADER_MAP}
-    return _build(g.get("title"), g.get("thumb"), g.get("embed"),
+    return build(g.get("title"), g.get("thumb"), g.get("embed"),
                   g.get("tags"), g.get("url"))
 
-def _row_from_headless(cells):
+def row_from_headless(cells):
     title = thumb = embed = url = tags = None
     for c in cells:
         c = (c or "").strip()
@@ -57,7 +57,7 @@ def _row_from_headless(cells):
             continue
         if ("<iframe" in c.lower() or "/embed/" in c.lower()) and not embed:
             embed = c
-        elif _looks_like_img(c) and not thumb:
+        elif looks_like_img(c) and not thumb:
             thumb = c
         elif c.lower().startswith("http") and not url:
             url = c
@@ -65,10 +65,10 @@ def _row_from_headless(cells):
             tags = c
         elif not title:
             title = c
-    return _build(title, thumb, embed, tags, url)
+    return build(title, thumb, embed, tags, url)
 
-def _build(title, thumb, embed, tags, url):
-    embed_src = _embed_from(embed, url or "")
+def build(title, thumb, embed, tags, url):
+    embed_src = embed_from(embed, url or "")
     if not title:
         title = (tags or "Adult clip").split(",")[0].strip()[:80] or "Adult clip"
     return {
@@ -86,7 +86,7 @@ def _build(title, thumb, embed, tags, url):
     }
 
 def parse(path, limit=500):
-    stream = _open_text(path)
+    stream = open_text(path)
     try:
         sample = stream.read(4096)
         stream.seek(0)
@@ -103,7 +103,7 @@ def parse(path, limit=500):
         if has_header:
             reader = csv.DictReader(stream, dialect=dialect)
             for d in reader:
-                out.append(_row_from_headed(d))
+                out.append(row_from_headed(d))
                 if len(out) >= limit:
                     break
         else:
@@ -111,7 +111,7 @@ def parse(path, limit=500):
             for cells in reader:
                 if not cells:
                     continue
-                out.append(_row_from_headless(cells))
+                out.append(row_from_headless(cells))
                 if len(out) >= limit:
                     break
         return [r for r in out if r["image_url"] or r["extra"].get("embed_url")]

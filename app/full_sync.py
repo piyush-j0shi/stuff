@@ -11,13 +11,13 @@ JOBS = {
                jikan.map_full_manhwa),
 }
 
-def _checkpoint(job):
+def checkpoint(job):
     with db() as c:
         r = c.execute("SELECT last_page, done, items FROM sync_state WHERE job = ?",
                       (job,)).fetchone()
     return (r["last_page"], r["done"], r["items"]) if r else (0, 0, 0)
 
-def _save(job, page, done, items):
+def save(job, page, done, items):
     with db() as c:
         c.execute(
             "INSERT INTO sync_state(job, last_page, done, items, updated_at) "
@@ -28,7 +28,7 @@ def _save(job, page, done, items):
 
 def sync(job, restart=False):
     path, params, mapper = JOBS[job]
-    last, done, total = _checkpoint(job)
+    last, done, total = checkpoint(job)
     if done and not restart:
         print(f"{job} is already complete with {total} items. "
               f"Pass --restart to pull it again.", flush=True)
@@ -43,7 +43,7 @@ def sync(job, restart=False):
         if data:
             store.import_many([mapper(d) for d in data])
             total += len(data)
-        _save(job, page, 0 if has_next else 1, total)
+        save(job, page, 0 if has_next else 1, total)
         if page % 10 == 0 or not has_next:
             print(f"{job}: page {page}, {total} items so far", flush=True)
     print(f"Finished {job} with {total} items.", flush=True)

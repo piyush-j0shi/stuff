@@ -3,7 +3,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "media.db")
 
-def _load_dotenv():
+def load_dotenv():
     path = os.path.join(BASE_DIR, ".env")
     if not os.path.isfile(path):
         return
@@ -14,7 +14,7 @@ def _load_dotenv():
         key, val = line.split("=", 1)
         os.environ.setdefault(key.strip(), val.strip())
 
-_load_dotenv()
+load_dotenv()
 
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 TMDB_READ_TOKEN = os.environ.get("TMDB_READ_TOKEN", "")
@@ -26,15 +26,15 @@ SAFE_MODE = os.environ.get("SAFE_MODE", "0") == "1"
 ADMIN_USERS = {u.strip() for u in os.environ.get("ADMIN_USERS", "").split(",") if u.strip()}
 
 CATEGORIES = {
-    "anime":      {"label": "Anime",      "adult": False, "unit": "eps"},
-    "manga":      {"label": "Manga",      "adult": False, "unit": "ch"},
-    "manhwa":     {"label": "Manhwa",     "adult": False, "unit": "ch"},
-    "movie":      {"label": "Movies",     "adult": False, "unit": "min"},
-    "drama":      {"label": "Dramas",     "adult": False, "unit": "eps"},
-    "webseries":  {"label": "Web Series", "adult": False, "unit": "eps"},
-    "sports":     {"label": "Sports",     "adult": False, "unit": "events"},
-    "hentai":     {"label": "Hentai",     "adult": True,  "unit": "eps"},
-    "adultvideo": {"label": "Adult",      "adult": True,  "unit": "min"},
+    "anime": {"label": "Anime", "adult": False, "unit": "eps"},
+    "manga": {"label": "Manga", "adult": False, "unit": "ch"},
+    "manhwa": {"label": "Manhwa", "adult": False, "unit": "ch"},
+    "movie": {"label": "Movies", "adult": False, "unit": "min"},
+    "drama": {"label": "Dramas", "adult": False, "unit": "eps"},
+    "webseries": {"label": "Web Series", "adult": False, "unit": "eps"},
+    "sports": {"label": "Sports", "adult": False, "unit": "events"},
+    "hentai": {"label": "Hentai", "adult": True, "unit": "eps"},
+    "adultvideo": {"label": "Adult", "adult": True, "unit": "min"},
 }
 
 ADULT_TYPES = {k for k, v in CATEGORIES.items() if v["adult"]}

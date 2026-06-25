@@ -55,8 +55,8 @@ def import_many(items: list[dict]):
     created = updated = 0
     ids = []
     for it in items:
-        _id, was_new = upsert_item(it)
-        ids.append(_id)
+        item_id, was_new = upsert_item(it)
+        ids.append(item_id)
         created += was_new
         updated += not was_new
     return {"created": created, "updated": updated, "ids": ids}

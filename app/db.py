@@ -109,7 +109,7 @@ def db():
     finally:
         conn.close()
 
-def _ensure_column(conn, table, column, decl):
+def ensure_column(conn, table, column, decl):
     cols = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
     if column not in cols:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
@@ -117,8 +117,8 @@ def _ensure_column(conn, table, column, decl):
 def init_db():
     with db() as conn:
         conn.executescript(SCHEMA)
-        _ensure_column(conn, "user", "email", "TEXT")
-        _ensure_column(conn, "user", "is_admin", "INTEGER DEFAULT 0")
+        ensure_column(conn, "user", "email", "TEXT")
+        ensure_column(conn, "user", "is_admin", "INTEGER DEFAULT 0")
 
 def row_to_item(row):
     if row is None:

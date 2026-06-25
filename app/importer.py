@@ -17,12 +17,12 @@ ROUTES = {
     },
 }
 
-_KEYLESS = {"jikan", "thesportsdb"}
+KEYLESS = {"jikan", "thesportsdb"}
 
 def options():
     out = []
     for source, types in ROUTES.items():
-        ready = source in _KEYLESS or tmdb.enabled()
+        ready = source in KEYLESS or tmdb.enabled()
         for t in types:
             out.append({"source": source, "type": t, "ready": ready})
     return out

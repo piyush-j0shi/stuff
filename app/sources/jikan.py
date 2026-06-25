@@ -5,18 +5,18 @@ import httpx
 BASE = "https://api.jikan.moe/v4"
 PAGE_DELAY = 1.0
 
-def _names(d, key):
+def names(d, key):
     return [g.get("name") for g in (d.get(key) or []) if g.get("name")]
 
-def _map_anime(d, type_="anime"):
-    genres = _names(d, "genres") + _names(d, "themes") + _names(d, "demographics")
+def map_anime(d, type_="anime"):
+    genres = names(d, "genres") + names(d, "themes") + names(d, "demographics")
     extra = {
         "subtype": d.get("type"),
         "rating": d.get("rating"),
         "origin": d.get("source"),
-        "studios": ", ".join(_names(d, "studios")) or None,
-        "authors": ", ".join(_names(d, "authors")) or None,
-        "demographics": ", ".join(_names(d, "demographics")) or None,
+        "studios": ", ".join(names(d, "studios")) or None,
+        "authors": ", ".join(names(d, "authors")) or None,
+        "demographics": ", ".join(names(d, "demographics")) or None,
         "chapters": d.get("chapters"),
         "volumes": d.get("volumes"),
         "duration": d.get("duration"),
@@ -33,7 +33,7 @@ def _map_anime(d, type_="anime"):
         "year": d.get("year"),
         "season": (f"{d.get('season','').title()} {d.get('year')}"
                    if d.get("season") and d.get("year") else None),
-        "air_status": _status(d.get("status")),
+        "air_status": status(d.get("status")),
         "units_total": d.get("episodes") or d.get("chapters") or 0,
         "score": d.get("score") or 0,
         "members": d.get("members") or 0,
@@ -44,7 +44,7 @@ def _map_anime(d, type_="anime"):
         "extra": {k: v for k, v in extra.items() if v not in (None, "", [])},
     }
 
-def _status(s):
+def status(s):
     s = (s or "").lower()
     if "airing" in s and "not" not in s:
         return "airing"
@@ -59,22 +59,22 @@ def search_anime(term, limit=10, sfw=True):
     with httpx.Client(timeout=15) as c:
         r = c.get(f"{BASE}/anime", params=params)
         r.raise_for_status()
-        return [_map_anime(d) for d in r.json().get("data", [])]
+        return [map_anime(d) for d in r.json().get("data", [])]
 
 def search_manga(term, limit=10):
     with httpx.Client(timeout=15) as c:
         r = c.get(f"{BASE}/manga", params={"q": term, "limit": limit})
         r.raise_for_status()
-        return [_map_anime(d, type_="manga") for d in r.json().get("data", [])]
+        return [map_anime(d, type_="manga") for d in r.json().get("data", [])]
 
 def search_hentai(term, limit=10):
     params = {"q": term, "limit": limit, "genres": "12", "sfw": "false", "rating": "rx"}
     with httpx.Client(timeout=15) as c:
         r = c.get(f"{BASE}/anime", params=params)
         r.raise_for_status()
-        return [_map_anime(d, type_="hentai") for d in r.json().get("data", [])]
+        return [map_anime(d, type_="hentai") for d in r.json().get("data", [])]
 
-def _paged(path, params, pages, type_, on_progress=None):
+def paged(path, params, pages, type_, on_progress=None):
     out = []
     with httpx.Client(timeout=25) as c:
         for p in range(1, pages + 1):
@@ -90,25 +90,25 @@ def _paged(path, params, pages, type_, on_progress=None):
                 break
             if not data:
                 break
-            out += [_map_anime(d, type_) for d in data]
+            out += [map_anime(d, type_) for d in data]
             if on_progress:
                 on_progress(type_, p, len(out))
             time.sleep(PAGE_DELAY)
     return out
 
 def top_anime(pages=5, on_progress=None):
-    return _paged("top/anime", {}, pages, "anime", on_progress)
+    return paged("top/anime", {}, pages, "anime", on_progress)
 
 def top_manga(pages=5, on_progress=None):
-    return _paged("top/manga", {}, pages, "manga", on_progress)
+    return paged("top/manga", {}, pages, "manga", on_progress)
 
 def top_hentai(pages=3, on_progress=None):
     params = {"genres": "12", "sfw": "false", "order_by": "members", "sort": "desc"}
-    return _paged("anime", params, pages, "hentai", on_progress)
+    return paged("anime", params, pages, "hentai", on_progress)
 
 def top_manhwa(pages=5, on_progress=None):
     params = {"type": "manhwa", "order_by": "members", "sort": "desc"}
-    return _paged("manga", params, pages, "manhwa", on_progress)
+    return paged("manga", params, pages, "manhwa", on_progress)
 
 def anime_credits(sid, limit=15):
     cast, director = [], None
@@ -147,25 +147,25 @@ def manga_credits(sid, limit=15):
             pass
     return {"cast": cast, "director": None}
 
-def _is_hentai_anime(d):
+def is_hentai_anime(d):
     if (d.get("rating") or "").startswith("Rx"):
         return True
     return any(g.get("mal_id") == 12 for g in (d.get("genres") or []))
 
-def _has_adult_genre(d):
+def has_adult_genre(d):
     return any(g.get("mal_id") == 12 for g in (d.get("genres") or []))
 
 def map_full_anime(d):
-    return _map_anime(d, "hentai" if _is_hentai_anime(d) else "anime")
+    return map_anime(d, "hentai" if is_hentai_anime(d) else "anime")
 
 def map_full_manga(d):
-    m = _map_anime(d, "manga")
-    m["is_adult"] = 1 if _has_adult_genre(d) else 0
+    m = map_anime(d, "manga")
+    m["is_adult"] = 1 if has_adult_genre(d) else 0
     return m
 
 def map_full_manhwa(d):
-    m = _map_anime(d, "manhwa")
-    m["is_adult"] = 1 if _has_adult_genre(d) else 0
+    m = map_anime(d, "manhwa")
+    m["is_adult"] = 1 if has_adult_genre(d) else 0
     return m
 
 def walk(path, params, start_page=1, hard_max=100000):

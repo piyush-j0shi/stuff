@@ -6,12 +6,12 @@ from .sources import jikan, thesportsdb, tmdb
 STATUS = {"running": False, "lines": [], "done": False}
 
 
-def _log(msg):
+def log(msg):
     STATUS["lines"].append(msg)
     STATUS["lines"] = STATUS["lines"][-50:]
 
 
-def _run(counts):
+def run(counts):
     STATUS.update(running=True, done=False, lines=[])
     jobs = [
         ("anime", counts.get("anime", 0), jikan.top_anime),
@@ -25,19 +25,19 @@ def _run(counts):
     try:
         for label, pages, fn in jobs:
             if pages and pages > 0:
-                _log(f"{label}: pulling {pages} pages...")
+                log(f"{label}: pulling {pages} pages...")
                 items = fn(pages)
                 res = store.import_many(items)
-                _log(f"{label}: +{res['created']} new, {res['updated']} updated "
+                log(f"{label}: +{res['created']} new, {res['updated']} updated "
                      f"({len(items)} fetched)")
         if counts.get("sports", 0):
-            _log("sports: pulling major leagues...")
+            log("sports: pulling major leagues...")
             items = thesportsdb.all_teams()
             res = store.import_many(items)
-            _log(f"sports: +{res['created']} new, {res['updated']} updated ({len(items)})")
-        _log("Done.")
+            log(f"sports: +{res['created']} new, {res['updated']} updated ({len(items)})")
+        log("Done.")
     except Exception as e:
-        _log(f"Error: {e}")
+        log(f"Error: {e}")
     finally:
         STATUS.update(running=False, done=True)
 
@@ -45,5 +45,5 @@ def _run(counts):
 def start(counts):
     if STATUS["running"]:
         return False
-    threading.Thread(target=_run, args=(counts,), daemon=True).start()
+    threading.Thread(target=run, args=(counts,), daemon=True).start()
     return True
