@@ -13,7 +13,23 @@ from .config import ADMIN_USERS, CATEGORIES, SAFE_MODE, SECRET_KEY, is_adult_typ
 from .db import db, init_db
 from .sources import csv_dump, tmdb
 
-app = FastAPI(title="MediaList")
+description = """
+MediaList is a multicategory media catalog and tracker. It serves as a unified site for anime, manga, manhwa, movies, dramas, web series, and sports.
+
+The application is built with FastAPI and SQLite, using vanilla HTML, CSS, and JS without any build step or JavaScript framework.
+
+Key Capabilities
+* One engine for every category using a single media item table.
+* Homepage with various sections like Top Airing, Upcoming, Seasonal, Top of All Time, Newest, and Trending.
+* Browse and pagination for every category with sorting options.
+* Item pages with descriptions, watch links, cast, reviews, and inline embed players.
+* Accounts and personal lists to track watching status.
+* Bulk and fullcatalog importers for real data from public APIs.
+
+Setup and configuration is handled through environment variables, with support for features like safe mode and administrator accounts.
+"""
+
+app = FastAPI(title="MediaList", description=description.strip(), docs_url=None, redoc_url=None)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -53,6 +69,27 @@ def base_ctx(request: Request):
 @app.on_event("startup")
 def startup():
     init_db()
+
+@app.get("/docs", include_in_schema=False)
+def scalar_docs():
+    html = """
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>MediaList API Documentation</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          body { margin: 0; padding: 0; }
+        </style>
+      </head>
+      <body>
+        <script id="api-reference" data-url="/openapi.json"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+      </body>
+    </html>
+    """
+    return HTMLResponse(html)
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
